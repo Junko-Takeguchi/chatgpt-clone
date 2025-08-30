@@ -1,16 +1,14 @@
 import { google } from "@ai-sdk/google"
-import { streamText, UIMessage, convertToModelMessages } from 'ai';
-
-// Allow streaming responses up to 30 seconds
-export const maxDuration = 30;
+import { convertToModelMessages, streamText, type UIMessage } from "ai"
 
 export async function POST(req: Request) {
-  const { messages }: { messages: UIMessage[] } = await req.json();
+  const { messages }: { messages: UIMessage[] } = await req.json()
 
   const result = streamText({
-    model: google('models/gemini-2.5-flash-lite'),
+    model: google("gemini-2.5-flash-lite"),
+    system: "You are a helpful assistant.",
     messages: convertToModelMessages(messages),
-  });
+  })
 
-  return result.toUIMessageStreamResponse();
+  return result.toUIMessageStreamResponse()
 }
