@@ -10,7 +10,7 @@ export function MessageBubble({ message }: { message: UIMessage }) {
     <div className={cn("w-full", isUser ? "flex justify-end" : "flex justify-start")}>
       <div
         className={cn(
-          "w-fit max-w-[680px] md:max-w-[720px] rounded-2xl px-4 py-3 text-sm leading-6 flex flex-col gap-2",
+          "w-fit max-w-2xs md:max-w-[720px] rounded-2xl px-4 py-3 text-sm leading-6 flex flex-col gap-2",
           isUser ? "bg-secondary text-zinc-100" : "bg-zinc-800 text-zinc-200",
           "whitespace-pre-wrap break-words break-all overflow-hidden text-pretty"
         )}

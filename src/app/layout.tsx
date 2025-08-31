@@ -26,6 +26,8 @@ export default function RootLayout({
   return (
     <ClerkProvider
       afterSignOutUrl="/chat"
+      signUpUrl="/sign-up"
+      signInUrl="/sign-in"
     >
       <html lang="en">
         <body
