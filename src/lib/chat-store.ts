@@ -3,7 +3,6 @@
 
 import { generateId } from "ai";
 import type { UIMessage } from "ai";
-import useSWR from "swr";
 
 const CHATS_KEY = "cgpt:chats:v2";
 
@@ -43,6 +42,7 @@ function writeStore(store: Store) {
  * SWR helper - return shape expected by your current codebase
  * (you already call useSWR elsewhere; keep the same hook name)
  */
+import useSWR from "swr";
 export function useChats() {
   return useSWR<Store>(CHATS_KEY, () => readStore(), { fallbackData: { chats: [] } });
 }

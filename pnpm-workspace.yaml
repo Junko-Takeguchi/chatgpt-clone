@@ -1,6 +1,3 @@
 onlyBuiltDependencies:
   - '@clerk/shared'
   - '@prisma/client'
-  - '@tailwindcss/oxide'
-  - sharp
-  - unrs-resolver

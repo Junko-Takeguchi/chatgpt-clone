@@ -26,6 +26,7 @@ export function Sidebar() {
     apply(mq.matches)
     const handler = (e: MediaQueryListEvent | MediaQueryList) =>
       setIsSidebarOpen("matches" in e ? e.matches : (e as MediaQueryList).matches)
+
     if ("addEventListener" in mq) {
       mq.addEventListener("change", handler as (e: Event) => void)
       return () => mq.removeEventListener("change", handler as (e: Event) => void)
@@ -56,8 +57,7 @@ export function Sidebar() {
                 variant="secondary"
                 className="h-8 rounded-full bg-zinc-800/80 text-zinc-100 hover:bg-zinc-700"
               >
-                <Plus className="mr-2 h-4 w-4" />
-                New chat
+                <Plus className="mr-2 h-4 w-4" /> New chat
               </Button>
             )}
             <Button
@@ -71,9 +71,9 @@ export function Sidebar() {
             </Button>
           </div>
         </div>
-        {isSidebarOpen && (
-          <SidebarHeader/>
-        )}
+
+        {isSidebarOpen && <SidebarHeader />}
+
         {isSidebarOpen && (
           <div className="space-y-6 px-3">
             <SidebarSection title="Today" chats={grouped.today} />
@@ -82,20 +82,21 @@ export function Sidebar() {
           </div>
         )}
       </div>
+
       <div className={cn("px-3 pb-3", !isSidebarOpen && "px-0")}>
         {isSidebarOpen ? (
           <div className="flex items-center gap-3 p-3 border-t border-zinc-800">
-            {isSignedIn && isLoaded && 
-            <div className="flex gap-2">
-              <UserButton />
-              <div className="flex flex-col overflow-hidden">
-                <span className="text-sm text-zinc-200 truncate">
-                  {user.fullName}
-                </span>
-                <span className="text-xs text-zinc-400 truncate">Free</span>
+            {isSignedIn && isLoaded && (
+              <div className="flex gap-2">
+                <UserButton />
+                <div className="flex flex-col overflow-hidden">
+                  <span className="text-sm font-medium text-zinc-200 truncate">{user.fullName}</span>
+                  <span className="text-xs text-zinc-400 truncate">Free</span>
+                </div>
               </div>
-            </div>}
-              {!isSignedIn && <div className="w-full">
+            )}
+            {!isSignedIn && (
+              <div className="w-full flex">
                 <SignInButton mode="redirect">
                   <Button
                     variant="ghost"
@@ -108,7 +109,8 @@ export function Sidebar() {
                     <span>Sign In</span>
                   </Button>
                 </SignInButton>
-              </div>}
+              </div>
+            )}
           </div>
         ) : (
           <div className="flex items-center justify-center">
