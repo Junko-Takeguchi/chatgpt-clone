@@ -7,7 +7,7 @@ import { useChats, getChat, getMessages, saveChat } from "@/lib/chat-store";
 import { MessageBubble } from "@/components/chat/message-bubble";
 import { useParams } from "next/navigation";
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
+import { DefaultChatTransport, FileUIPart } from "ai";
 
 export default function ChatPage() {
   const params = useParams() as { chatId?: string };
@@ -86,10 +86,13 @@ export default function ChatPage() {
     );
   }
 
-  const handleSend = (text: string) => {
-    // useChat will append a user message client-side and stream assistant reply.
-    sendMessage({ text });
+  const handleSend = (text: string, files?: FileUIPart[]) => {
+    sendMessage({
+      text,
+      files, // this is an array of FileUIPart objects
+    });
   };
+
 
   return (
     <div className="flex h-full flex-col">
