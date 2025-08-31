@@ -18,8 +18,8 @@ export default function ChatPage() {
   const clerkUserId = user?.id;
 
   const { data, mutate } = useChats(clerkUserId); // per-user
-  const chat = useMemo(() => (chatId ? getChat(chatId, clerkUserId) : undefined), [chatId, data, clerkUserId]);
-  const initialMessages = useMemo(() => (chatId ? getMessages(chatId, clerkUserId) : []), [chatId, data, clerkUserId]);
+  const chat = useMemo(() => (chatId ? getChat(chatId, clerkUserId) : undefined), [chatId, clerkUserId]);
+  const initialMessages = useMemo(() => (chatId ? getMessages(chatId, clerkUserId) : []), [chatId, clerkUserId]);
 
   const endRef = useRef<HTMLDivElement | null>(null);
 
@@ -66,7 +66,6 @@ export default function ChatPage() {
     } finally {
       sessionStorage.removeItem(key);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatId, sendMessage]);
 
   // auto-scroll when messages change

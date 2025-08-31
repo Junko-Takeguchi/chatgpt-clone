@@ -39,9 +39,9 @@ export function Sidebar() {
       mq.addEventListener("change", handler as (e: Event) => void)
       return () => mq.removeEventListener("change", handler as (e: Event) => void)
     } else {
-      // @ts-ignore - legacy
+      // @ts-expect-error
       mq.addListener(handler)
-      // @ts-ignore - legacy
+      // @ts-expect-error
       return () => mq.removeListener(handler)
     }
   }, [])
