@@ -3,9 +3,11 @@
 
 import { generateId } from "ai";
 import type { UIMessage } from "ai";
+import useSWR from "swr";
 
 const CHATS_KEY = "cgpt:chats:v2";
 
+/** Store types */
 export type Chat = {
   id: string;
   title: string;
@@ -23,33 +25,75 @@ function genId() {
   return generateId();
 }
 
-function readStore(): Store {
+/** compute storage key; when clerkUserId supplied, store per-user */
+function storageKey(clerkUserId?: string) {
+  return clerkUserId ? `${CHATS_KEY}:${clerkUserId}` : CHATS_KEY;
+}
+
+/**
+ * readStore: reads the store for a given clerkUserId (or the legacy global key if undefined)
+ * Also: if clerkUserId provided and legacy global key exists, perform a one-time migration.
+ */
+function readStore(clerkUserId?: string): Store {
   if (typeof window === "undefined") return { chats: [] };
+
   try {
-    const raw = localStorage.getItem(CHATS_KEY) || "[]";
-    const chats = JSON.parse(raw) as Chat[];
-    return { chats };
+    const key = storageKey(clerkUserId);
+
+    // if per-user key is missing but legacy global exists and clerkUserId present -> migrate
+    if (clerkUserId) {
+      const rawUser = localStorage.getItem(key);
+      const rawLegacy = localStorage.getItem(CHATS_KEY);
+
+      // If user key exists, use it
+      if (rawUser) {
+        const chats = JSON.parse(rawUser) as Chat[];
+        return { chats };
+      }
+
+      // If legacy exists and user key empty, migrate legacy -> user key
+      if (rawLegacy) {
+        try {
+          const legacyChats = JSON.parse(rawLegacy) as Chat[];
+          // Write to user key
+          localStorage.setItem(key, JSON.stringify(legacyChats));
+          // Optionally remove legacy key or leave it. We'll keep it for safety.
+          return { chats: legacyChats };
+        } catch {
+          // If parsing failed, fall through to empty
+        }
+      }
+
+      // No user-specific or legacy, return empty
+      return { chats: [] };
+    } else {
+      // No clerkUserId: read legacy/global key
+      const raw = localStorage.getItem(CHATS_KEY) || "[]";
+      const chats = JSON.parse(raw) as Chat[];
+      return { chats };
+    }
   } catch {
     return { chats: [] };
   }
 }
 
-function writeStore(store: Store) {
-  localStorage.setItem(CHATS_KEY, JSON.stringify(store.chats));
+function writeStore(chats: Chat[], clerkUserId?: string) {
+  const key = storageKey(clerkUserId);
+  localStorage.setItem(key, JSON.stringify(chats));
 }
 
 /**
- * SWR helper - return shape expected by your current codebase
- * (you already call useSWR elsewhere; keep the same hook name)
+ * SWR helper - keyed by clerkUserId so components will revalidate per user
+ * Usage: const { data } = useChats(clerkUserId);
  */
-import useSWR from "swr";
-export function useChats() {
-  return useSWR<Store>(CHATS_KEY, () => readStore(), { fallbackData: { chats: [] } });
+export function useChats(clerkUserId?: string) {
+  const key = storageKey(clerkUserId);
+  return useSWR<Store>(key, () => readStore(clerkUserId), { fallbackData: { chats: [] } });
 }
 
-/** Create a fresh chat, optionally with initial user message (UIMessage format) */
-export function createChat(initialText?: string): { chat: Chat } {
-  const store = readStore();
+/** Create a fresh chat for a given user (or legacy global if clerkUserId undefined) */
+export function createChat(initialText?: string, clerkUserId?: string): { chat: Chat } {
+  const store = readStore(clerkUserId);
   const now = new Date().toISOString();
 
   const chat: Chat = {
@@ -61,7 +105,7 @@ export function createChat(initialText?: string): { chat: Chat } {
   };
 
   store.chats.unshift(chat);
-  writeStore(store);
+  writeStore(store.chats, clerkUserId);
 
   // Persist initial text to sessionStorage so the chat page can submit it after redirect.
   // Use sessionStorage rather than localStorage so it's ephemeral per tab.
@@ -76,17 +120,29 @@ export function createChat(initialText?: string): { chat: Chat } {
 
   return { chat };
 }
+
 /** Save (overwrite) a chat's messages — used by server onFinish or client */
-export function saveChat({ chatId, messages }: { chatId: string; messages: UIMessage[] }) {
-  const store = readStore();
+export function saveChat({
+  chatId,
+  messages,
+  clerkUserId,
+}: {
+  chatId: string;
+  messages: UIMessage[];
+  clerkUserId?: string;
+}) {
+  const store = readStore(clerkUserId);
   const chat = store.chats.find((c) => c.id === chatId);
   const now = new Date().toISOString();
+
   if (!chat) {
     // if chat doesn't exist, create it
     const title =
       messages?.find((m) => m.role === "user" && m.parts?.[0]?.type === "text")
-        ? (messages.find((m) => m.role === "user")!.parts?.map((p) => (p.type === "text" ? p.text : "")).join("").slice(0, 40) ||
-            "New chat")
+        ? (messages.find((m) => m.role === "user")!.parts
+            ?.map((p) => (p.type === "text" ? p.text : ""))
+            .join("")
+            .slice(0, 40) || "New chat")
         : "New chat";
     store.chats.unshift({
       id: chatId,
@@ -105,19 +161,19 @@ export function saveChat({ chatId, messages }: { chatId: string; messages: UIMes
       if (text) chat.title = text.slice(0, 40);
     }
   }
-  writeStore(store);
+
+  writeStore(store.chats, clerkUserId);
 }
 
-/** Return chat object or undefined */
-export function getChat(chatId: string): Chat | undefined {
-  return readStore().chats.find((c) => c.id === chatId);
+/** Return chat object or undefined (for a given user) */
+export function getChat(chatId: string, clerkUserId?: string): Chat | undefined {
+  return readStore(clerkUserId).chats.find((c) => c.id === chatId);
 }
 
-/** Return messages for a chat (sorted by metadata.createdAt if present) */
-export function getMessages(chatId: string): UIMessage[] {
-  const chat = getChat(chatId);
+/** Return messages for a chat (sorted by metadata.createdAt when present) */
+export function getMessages(chatId: string, clerkUserId?: string): UIMessage[] {
+  const chat = getChat(chatId, clerkUserId);
   if (!chat) return [];
-  // sort by metadata.createdAt when available; fall back to stored order
   return [...chat.messages].sort((a, b) => {
     const aTs = (a.metadata as any)?.createdAt;
     const bTs = (b.metadata as any)?.createdAt;
@@ -127,28 +183,26 @@ export function getMessages(chatId: string): UIMessage[] {
 }
 
 /** Utility to delete a chat (optional) */
-export function deleteChat(chatId: string) {
-  const store = readStore();
+export function deleteChat(chatId: string, clerkUserId?: string) {
+  const store = readStore(clerkUserId);
   store.chats = store.chats.filter((c) => c.id !== chatId);
-  writeStore(store);
+  writeStore(store.chats, clerkUserId);
 }
 
-
-// Group chats into Today / Previous 7 Days / Previous 30 Days (approx)
+/** Group chats into Today / Previous 7 Days / Previous 30 Days (approx) */
 export function groupChatsByTime(chats: Chat[]) {
-  const now = Date.now()
-  const day = 24 * 60 * 60 * 1000
-  const today: Chat[] = []
-  const last7: Chat[] = []
-  const last30: Chat[] = []
+  const now = Date.now();
+  const day = 24 * 60 * 60 * 1000;
+  const today: Chat[] = [];
+  const last7: Chat[] = [];
+  const last30: Chat[] = [];
 
   chats.forEach((c) => {
-    const diff = Math.floor((now - new Date(c.updatedAt).getTime()) / day)
-    if (diff <= 0) today.push(c)
-    else if (diff <= 7) last7.push(c)
-    else if (diff <= 30) last30.push(c)
-  })
+    const diff = Math.floor((now - new Date(c.updatedAt).getTime()) / day);
+    if (diff <= 0) today.push(c);
+    else if (diff <= 7) last7.push(c);
+    else if (diff <= 30) last30.push(c);
+  });
 
-  return { today, last7, last30 }
+  return { today, last7, last30 };
 }
-

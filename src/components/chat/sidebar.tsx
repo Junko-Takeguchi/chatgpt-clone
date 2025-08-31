@@ -13,9 +13,10 @@ import { SidebarHeader } from "./sidebar-header"
 import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from "@clerk/nextjs"
 
 export function Sidebar() {
-  const { data } = useChats()
   const { user, isLoaded, isSignedIn } = useUser();
-  const chats = data?.chats ?? []
+  // pass user?.id so useChats returns the per-user chat list
+  const { data } = useChats(user?.id);
+  const chats = data?.chats ?? [];
   const router = useRouter()
   const grouped = groupChatsByTime(chats)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);

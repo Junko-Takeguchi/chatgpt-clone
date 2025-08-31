@@ -1,5 +1,5 @@
 // hooks/useChats.ts
-import { Chat } from "@/lib/chat-store";
+import { Chat } from "@/lib/types";
 import useSWR from "swr";
 
 async function fetcher(url: string) {

@@ -1,3 +1,4 @@
+// app/chat/[chatId]/page.tsx
 "use client";
 
 import { useEffect, useRef, useMemo } from "react";
@@ -7,14 +8,18 @@ import { useChats, getChat, getMessages, saveChat } from "@/lib/chat-store";
 import { MessageBubble } from "@/components/chat/message-bubble";
 import { useParams } from "next/navigation";
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport, FileUIPart } from "ai";
+import { DefaultChatTransport } from "ai";
+import { useUser } from "@clerk/nextjs"; // <-- import
 
 export default function ChatPage() {
   const params = useParams() as { chatId?: string };
   const chatId = params?.chatId;
-  const { data, mutate } = useChats();
-  const chat = useMemo(() => (chatId ? getChat(chatId) : undefined), [chatId, data]);
-  const initialMessages = useMemo(() => (chatId ? getMessages(chatId) : []), [chatId, data]);
+  const { user } = useUser();
+  const clerkUserId = user?.id;
+
+  const { data, mutate } = useChats(clerkUserId); // per-user
+  const chat = useMemo(() => (chatId ? getChat(chatId, clerkUserId) : undefined), [chatId, data, clerkUserId]);
+  const initialMessages = useMemo(() => (chatId ? getMessages(chatId, clerkUserId) : []), [chatId, data, clerkUserId]);
 
   const endRef = useRef<HTMLDivElement | null>(null);
 
@@ -28,14 +33,14 @@ export default function ChatPage() {
     }),
     onFinish: ({ messages }) => {
       if (!chatId) return;
-      saveChat({ chatId, messages });
-      // refresh sidebar list
+      // persist for the current user
+      saveChat({ chatId, messages, clerkUserId });
+      // refresh sidebar list (per-user)
       mutate?.();
     },
   });
 
   // persist on every messages change so partial updates are saved locally
-  // inside ChatPage component, after you have `messages` and `sendMessage`
   useEffect(() => {
     if (!chatId) return;
 
@@ -43,7 +48,6 @@ export default function ChatPage() {
     const pending = sessionStorage.getItem(key);
     if (!pending) return;
 
-    // If there's already a user message with the same text, don't resend.
     const already = messages.some((m) =>
       m.role === "user" &&
       Array.isArray(m.parts) &&
@@ -51,24 +55,19 @@ export default function ChatPage() {
     );
 
     if (already) {
-      // clean up the session key if present
       sessionStorage.removeItem(key);
       return;
     }
 
-    // send the message (this will create the user message client-side and start streaming)
     try {
       sendMessage({ text: pending });
     } catch (err) {
-      // ignore/send to telemetry as needed
       console.error("Failed to auto-send initial message:", err);
     } finally {
       sessionStorage.removeItem(key);
     }
-    // only run when sendMessage or chatId changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatId, sendMessage]);
-
 
   // auto-scroll when messages change
   useEffect(() => {
@@ -86,13 +85,12 @@ export default function ChatPage() {
     );
   }
 
-  const handleSend = (text: string, files?: FileUIPart[]) => {
+  const handleSend = (text: string, files?: any[]) => {
     sendMessage({
       text,
-      files, // this is an array of FileUIPart objects
+      files,
     });
   };
-
 
   return (
     <div className="flex h-full flex-col">

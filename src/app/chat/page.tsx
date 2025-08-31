@@ -1,16 +1,20 @@
-"use client"
-import { ContentHeader } from "@/components/chat/content-header"
-import { ChatInput } from "@/components/chat/chat-input"
-import { createChat } from "@/lib/chat-store"
-import { useRouter } from "next/navigation"
+// app/chat/page.tsx (ChatHomePage)
+"use client";
+
+import { ContentHeader } from "@/components/chat/content-header";
+import { ChatInput } from "@/components/chat/chat-input";
+import { createChat } from "@/lib/chat-store";
+import { useRouter } from "next/navigation";
+import { useUser } from "@clerk/nextjs"; // <-- import
 
 export default function ChatHomePage() {
-  const router = useRouter()
+  const router = useRouter();
+  const { user, isLoaded } = useUser();
 
   const startChat = (firstMessage: string) => {
-    const { chat } = createChat(firstMessage)
-    router.push(`/chat/${chat.id}`)
-  }
+    const { chat } = createChat(firstMessage, user?.id); // pass clerkUserId (or undefined if not signed in)
+    router.push(`/chat/${chat.id}`);
+  };
 
   return (
     <div className="flex h-full flex-col">
@@ -22,9 +26,9 @@ export default function ChatHomePage() {
           {"What's on the agenda today?"}
         </h1>
         <div className="w-full max-w-3xl">
-          <ChatInput placeholder="Ask anything" onSubmit={startChat} autoFocus />
+          <ChatInput placeholder="Ask anything" onSubmit={startChat} />
         </div>
       </main>
     </div>
-  )
+  );
 }
