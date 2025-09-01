@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button"
-import { Upload, Shield } from "lucide-react"
+import { Share, Ellipsis } from "lucide-react"
 import { ModelDropdown } from "./model-dropdown"
-import Image from "next/image"
 
 export function ContentHeader() {
   return (
@@ -10,9 +9,23 @@ export function ContentHeader() {
         <ModelDropdown />
       </div>
 
-      {/* Reference header image (hidden) */}
-      <div className="sr-only">
-        <Image src="/images/search.png" alt="Reference input look" width={639} height={44} />
+      {/* Share + 3-Dots */}
+      <div className="flex items-center gap-1">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="rounded-full w-fit px-3 cursor-pointer hover:bg-secondary text-white hover:text-white"
+        >
+          <Share className="h-4 w-4" />
+          <span>Share</span>
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="rounded-full hover:bg-secondary cursor-pointer text-white hover:text-white"
+        >
+          <Ellipsis className="h-4 w-4" />
+        </Button>
       </div>
     </header>
   )

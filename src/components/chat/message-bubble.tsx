@@ -6,11 +6,11 @@ export function MessageBubble({ message }: { message: UIMessage }) {
   const isUser = message.role === "user";
 
   return (
-    <div className={cn("w-full", isUser ? "flex justify-end" : "flex justify-start")}>
+    <div className={cn("w-full", isUser ? "flex justify-end" : "flex justify-centre")}>
       <div
         className={cn(
-          "w-fit max-w-2xs md:max-w-[720px] rounded-2xl px-4 bg-primary py-3 text-sm leading-6 flex flex-col gap-2",
-          isUser ? "bg-secondary text-zinc-100" : "bg-secondary text-zinc-200",
+          "w-fit rounded-2xl px-4 py-3 text-normal leading-6 flex flex-col gap-2",
+          isUser ? "bg-secondary max-w-2xs md:max-w-md text-zinc-100" : "bg-primary text-zinc-200 w-full",
           "whitespace-pre-wrap break-words break-all overflow-hidden text-pretty"
         )}
       >
@@ -18,6 +18,7 @@ export function MessageBubble({ message }: { message: UIMessage }) {
           // Text parts
           if (part.type === "text") {
             return <MemoizedMarkdown key={index} id={message.id} content={part.text} />;
+            // return <div key={index}>{part.text}</div>
           }
 
           // File parts (images)

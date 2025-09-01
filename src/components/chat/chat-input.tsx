@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { Paperclip, SendHorizonal, X } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { MoveUp, Paperclip, Plus, SendHorizonal, X } from "lucide-react";
 
 export function ChatInput({
   placeholder = "Message ChatGPT",
@@ -11,23 +11,16 @@ export function ChatInput({
   onSubmit: (text: string, files?: any[]) => void;
 }) {
   const [value, setValue] = useState("");
-  const [files, setFiles] = useState<any[]>([]); // store uploaded file objects
+  const [files, setFiles] = useState<any[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const adjustHeight = () => {
-    const el = textareaRef.current;
-    if (!el) return;
-    el.style.height = "auto";
-    const scrollHeight = el.scrollHeight;
-    const lineHeight = 24;
-    const maxHeight = lineHeight * 5;
-    el.style.height = `${Math.min(scrollHeight, maxHeight)}px`;
-  };
+
+  // ✅ Logic: Use \n count to determine multiline
+  const isMultiline = value.split("\n").length > 1;
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setValue(e.target.value);
-    adjustHeight();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -49,10 +42,7 @@ export function ChatInput({
 
         const res = await fetch(
           `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/upload`,
-          {
-            method: "POST",
-            body: formData,
-          }
+          { method: "POST", body: formData }
         );
         const data = await res.json();
 
@@ -65,7 +55,6 @@ export function ChatInput({
       })
     );
 
-    // Instead of sending immediately, just store them
     setFiles((prev) => [...prev, ...uploaded]);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
@@ -79,18 +68,14 @@ export function ChatInput({
     if (!value.trim() && files.length === 0) return;
 
     onSubmit(value, files);
-
-    // reset input
     setValue("");
     setFiles([]);
-    adjustHeight();
   };
 
   return (
-    <form onSubmit={send} className="px-4 py-4">
-      <div className="relative rounded-[28px] bg-secondary ring-1 ring-inset flex flex-col gap-2 ring-zinc-800/70 px-4 py-3">
-
-        {/* File previews */}
+    <form onSubmit={send} className="w-full">
+      <div className="relative w-full max-w-[850px] mx-auto rounded-[28px] bg-secondary ring-1 ring-inset ring-zinc-800/70 px-4 py-3 flex flex-col gap-2">
+        {/* File Previews */}
         {files.length > 0 && (
           <div className="flex gap-2 flex-wrap">
             {files.map((file, index) => (
@@ -112,33 +97,65 @@ export function ChatInput({
           </div>
         )}
 
-        {/* Text input */}
-        <textarea
-          ref={textareaRef}
-          value={value}
-          onChange={handleChange}
-          onKeyDown={handleKeyDown}
-          placeholder={placeholder}
-          className="block m-2 w-full resize-none bg-transparent text-zinc-200 placeholder:text-zinc-500 focus:outline-none overflow-hidden"
-          style={{ height: "25px", lineHeight: "24px", maxHeight: `${24 * 5}px` }}
-        />
+        {/* Input and Buttons */}
+        {!isMultiline ? (
+          // ✅ Single-line layout (icons inline)
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="text-zinc-400 hover:bg-[#424242] rounded-full hover:text-zinc-200"
+            >
+              <Plus className="h-6 w-6 text-white m-1" />
+            </button>
 
-        {/* Buttons */}
-        <div className="w-full flex justify-between">
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="rounded-full p-2 text-zinc-400 hover:bg-primary hover:text-zinc-200"
-          >
-            <Paperclip className="h-4 w-4" />
-          </button>
-          <button
-            type="submit"
-            className="rounded-full p-2 text-zinc-200 hover:bg-primary"
-          >
-            <SendHorizonal className="h-4 w-4" />
-          </button>
-        </div>
+            <textarea
+              value={value}
+              onChange={handleChange}
+              onKeyDown={handleKeyDown}
+              placeholder={placeholder}
+              ref={textareaRef}
+              rows={1}
+              className="w-full resize-none bg-transparent text-zinc-200 placeholder:text-zinc-500 focus:outline-none"
+            />
+
+            <button
+              type="submit"
+              className="text-zinc-200 bg-white rounded-full p-2 hover:cursor-pointer"
+            >
+              <MoveUp className="h-5 w-5 text-black" />
+            </button>
+          </div>
+        ) : (
+          // ✅ Multiline layout (buttons below)
+          <>
+            <textarea
+              value={value}
+              onChange={handleChange}
+              onKeyDown={handleKeyDown}
+              ref={textareaRef}
+              placeholder={placeholder}
+              rows={Math.min(value.split("\n").length, 9)}
+              className="w-full resize-none bg-transparent text-zinc-200 placeholder:text-zinc-500 focus:outline-none"
+            />
+
+            <div className="flex justify-between">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="rounded-full p-2 text-zinc-400 hover:bg-primary hover:text-zinc-200"
+              >
+                <Plus className="h-6 w-6 text-white hover:bg-[#424242]" />
+              </button>
+              <button
+                type="submit"
+                className="text-zinc-200 bg-white rounded-full p-2 hover:cursor-pointer"
+              >
+                <MoveUp className="h-5 w-5 text-black" />
+              </button>
+            </div>
+          </>
+        )}
 
         {/* Hidden file input */}
         <input

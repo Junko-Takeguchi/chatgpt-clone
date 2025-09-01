@@ -5,8 +5,8 @@ export async function POST(req: Request) {
   const { messages }: { messages: UIMessage[] } = await req.json()
 
   const result = streamText({
-    model: google("gemini-1.5-flash"),
-    system: "You are a helpful assistant.",
+    model: google("gemini-2.5-flash"),
+    system: "Return the answer in markdown",
     messages: convertToModelMessages(messages),
   })
 

@@ -41,6 +41,7 @@
   --chat-input-bg: #303030;    /* chat input background */
   --sidebar-bg: #181818;       /* sidebar background */
   --sidebar-hover: #212121; 
+  --upload: #424242;
 }
 
 .dark {
@@ -142,3 +143,28 @@
   word-break: break-word;
 }
 
+/* globals.css */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+  background: transparent; /* scrollbar background */
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: theme("colors.primary.DEFAULT"); /* Tailwind primary color */
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: theme("colors.primary.DEFAULT"); /* darker shade on hover */
+}
+
+::-webkit-scrollbar-track {
+  background: transparent; /* track background */
+}
+
+/* For Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: theme("colors.primary.DEFAULT") transparent;
+}

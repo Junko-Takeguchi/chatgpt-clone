@@ -110,13 +110,31 @@ export default function ChatPage() {
   return (
     <div className="flex h-full flex-col">
       <ContentHeader />
-      <div className="flex-1 space-y-6 overflow-y-auto p-6">
-        {messages.map((m) => (
-          <MessageBubble key={m.id} message={m} />
-        ))}
-        <div ref={endRef} />
+
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+        <div className="mx-auto w-full max-w-2xl space-y-6">
+          {messages.map((m) => (
+            <MessageBubble key={m.id} message={m} />
+          ))}
+          <div ref={endRef} />
+        </div>
       </div>
-      <ChatInput onSubmit={handleSend} />
+
+      <div className="">
+        <div className="">
+          <div className="mx-auto w-full max-w-2xl">
+            <ChatInput onSubmit={handleSend} />
+          </div>
+        </div>
+
+      </div>
+      <footer className="text-center text-xs text-white px-4 pb-3 pt-2 border-t border-zinc-800">
+        ChatGPT can make mistakes. Check important info. See{" "}
+        <a href="#" className="underline hover:text-white">
+          Cookie Preferences
+        </a>.
+      </footer>
     </div>
   );
+
 }
