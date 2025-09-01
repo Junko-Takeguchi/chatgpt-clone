@@ -4,7 +4,6 @@ import { MemoizedMarkdown } from "@/components/memoized-markdown";
 
 export function MessageBubble({ message }: { message: UIMessage }) {
   const isUser = message.role === "user";
-  const isSystem = message.role === "system";
 
   return (
     <div className={cn("w-full", isUser ? "flex justify-end" : "flex justify-start")}>

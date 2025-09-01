@@ -9,7 +9,7 @@ import { MessageBubble } from "@/components/chat/message-bubble";
 import { useParams } from "next/navigation";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { useUser } from "@clerk/nextjs"; // <-- import
+import { useUser } from "@clerk/nextjs"; 
 
 export default function ChatPage() {
   const params = useParams() as { chatId?: string };
@@ -17,7 +17,7 @@ export default function ChatPage() {
   const { user } = useUser();
   const clerkUserId = user?.id;
 
-  const { data, mutate } = useChats(clerkUserId); // per-user
+  const { mutate } = useChats(clerkUserId); // per-user
   const chat = useMemo(() => (chatId ? getChat(chatId, clerkUserId) : undefined), [chatId, clerkUserId]);
   const initialMessages = useMemo(() => (chatId ? getMessages(chatId, clerkUserId) : []), [chatId, clerkUserId]);
 
@@ -45,13 +45,25 @@ export default function ChatPage() {
     if (!chatId) return;
 
     const key = `cgpt:init:${chatId}`;
-    const pending = sessionStorage.getItem(key);
+    const raw = sessionStorage.getItem(key);
+    if (!raw) return;
+
+    let pending: { text: string; files?: any[] } | null = null;
+    try {
+      pending = JSON.parse(raw);
+    } catch {
+      // fallback: legacy text-only
+      pending = { text: raw };
+    }
+
     if (!pending) return;
 
     const already = messages.some((m) =>
       m.role === "user" &&
       Array.isArray(m.parts) &&
-      m.parts.some((p) => p.type === "text" && p.text === pending)
+      m.parts.some(
+        (p) => p.type === "text" && p.text === pending?.text
+      )
     );
 
     if (already) {
@@ -60,13 +72,17 @@ export default function ChatPage() {
     }
 
     try {
-      sendMessage({ text: pending });
+      sendMessage({
+        text: pending.text,
+        files: pending.files,
+      });
     } catch (err) {
       console.error("Failed to auto-send initial message:", err);
     } finally {
       sessionStorage.removeItem(key);
     }
   }, [chatId, sendMessage]);
+
 
   // auto-scroll when messages change
   useEffect(() => {

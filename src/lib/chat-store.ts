@@ -92,7 +92,7 @@ export function useChats(clerkUserId?: string) {
 }
 
 /** Create a fresh chat for a given user (or legacy global if clerkUserId undefined) */
-export function createChat(initialText?: string, clerkUserId?: string): { chat: Chat } {
+export function createChat(initialText?: string, clerkUserId?: string, initialFiles?: any[]): { chat: Chat } {
   const store = readStore(clerkUserId);
   const now = new Date().toISOString();
 
@@ -107,14 +107,20 @@ export function createChat(initialText?: string, clerkUserId?: string): { chat: 
   store.chats.unshift(chat);
   writeStore(store.chats, clerkUserId);
 
-  // Persist initial text to sessionStorage so the chat page can submit it after redirect.
-  // Use sessionStorage rather than localStorage so it's ephemeral per tab.
-  if (initialText?.trim()) {
+  // Persist initial message (text + files) into sessionStorage
+  if ((initialText?.trim()) || (initialFiles?.length)) {
     try {
       const key = `cgpt:init:${chat.id}`;
-      sessionStorage.setItem(key, initialText.trim());
-    } catch {
-      // ignore (eg. storage disabled)
+      sessionStorage.setItem(
+        key,
+        JSON.stringify({
+          text: initialText?.trim() || "",
+          files: initialFiles || [],
+        })
+      );
+    } catch(e) {
+      // ignore storage errors
+      console.log(e)
     }
   }
 
