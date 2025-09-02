@@ -20,14 +20,14 @@ export default function ChatHomePage() {
     <div className="flex h-full flex-col">
       <ContentHeader />
       <main className="flex flex-1 flex-col items-center justify-center px-4">
-        <h1 className="mb-6 text-center text-2xl font-semibold text-zinc-200 sm:text-3xl">
+        <h1 className="mb-6 text-center text-2xl font-semibold text-white sm:text-3xl">
           {"What's on the agenda today?"}
         </h1>
-        <div className="w-fit max-w-3xl">
+        <div className="mx-auto w-full max-w-2xl">
           <ChatInput placeholder="Ask anything" onSubmit={startChat} />
         </div>
       </main>
-      <footer className="text-center text-xs text-white px-4 pb-3 pt-2 border-t border-zinc-800">
+      <footer className="text-center text-xs text-white px-4 pb-3 pt-2">
         ChatGPT can make mistakes. Check important info. See{" "}
         <a href="#" className="underline hover:text-white">
           Cookie Preferences

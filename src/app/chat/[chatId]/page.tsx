@@ -114,7 +114,23 @@ export default function ChatPage() {
       <div className="flex-1 overflow-y-auto p-4 sm:p-6">
         <div className="mx-auto w-full max-w-2xl space-y-6">
           {messages.map((m) => (
-            <MessageBubble key={m.id} message={m} />
+            <MessageBubble
+              key={m.id}
+              message={m}
+              onEdit={(text) => {
+              if (!chatId) return;
+
+              // Step 1: Filter out the old message
+              const filteredMessages = messages.filter((msg) => msg.id !== m.id);
+
+              // Step 2: Save locally (optional, depending on your UX)
+              saveChat({ chatId, messages: filteredMessages, clerkUserId });
+
+              // Step 3: Re-send the edited message
+              sendMessage({ text });
+            }}
+            />
+
           ))}
           <div ref={endRef} />
         </div>
@@ -128,7 +144,7 @@ export default function ChatPage() {
         </div>
 
       </div>
-      <footer className="text-center text-xs text-white px-4 pb-3 pt-2 border-t border-zinc-800">
+      <footer className="text-center text-xs text-white px-4 pb-3 pt-2">
         ChatGPT can make mistakes. Check important info. See{" "}
         <a href="#" className="underline hover:text-white">
           Cookie Preferences

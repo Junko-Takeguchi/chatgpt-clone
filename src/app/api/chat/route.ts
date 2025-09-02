@@ -8,6 +8,9 @@ export async function POST(req: Request) {
     model: google("gemini-2.5-flash"),
     system: "Return the answer in markdown",
     messages: convertToModelMessages(messages),
+    async onFinish({ text }) {
+      // save to db 
+    }
   })
 
   return result.toUIMessageStreamResponse()

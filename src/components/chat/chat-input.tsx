@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { MoveUp, Paperclip, Plus, SendHorizonal, X } from "lucide-react";
+import { Plus, X } from "lucide-react";
+import { InputButton, InputDisabledButton } from "../icons";
 
 export function ChatInput({
   placeholder = "Message ChatGPT",
@@ -15,9 +16,8 @@ export function ChatInput({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-
-  // ✅ Logic: Use \n count to determine multiline
   const isMultiline = value.split("\n").length > 1;
+  const isInputEmpty = !value.trim() && files.length === 0;
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setValue(e.target.value);
@@ -26,7 +26,7 @@ export function ChatInput({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      send();
+      if (!isInputEmpty) send();
     }
   };
 
@@ -65,7 +65,7 @@ export function ChatInput({
 
   const send = (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!value.trim() && files.length === 0) return;
+    if (isInputEmpty) return;
 
     onSubmit(value, files);
     setValue("");
@@ -99,7 +99,6 @@ export function ChatInput({
 
         {/* Input and Buttons */}
         {!isMultiline ? (
-          // ✅ Single-line layout (icons inline)
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -119,15 +118,24 @@ export function ChatInput({
               className="w-full resize-none bg-transparent text-zinc-200 placeholder:text-zinc-500 focus:outline-none"
             />
 
-            <button
-              type="submit"
-              className="text-zinc-200 bg-white rounded-full p-2 hover:cursor-pointer"
-            >
-              <MoveUp className="h-5 w-5 text-black" />
-            </button>
+            {isInputEmpty ? (
+              <button
+                type="button"
+                className="bg-[#424242] hover:bg-secondary rounded-full p-2 cursor-default"
+                disabled
+              >
+                <InputDisabledButton className="h-5 w-5 text-white" />
+              </button>
+            ) : (
+              <button
+                type="submit"
+                className="text-white bg-white rounded-full p-2 hover:cursor-pointer"
+              >
+                <InputButton className="h-5 w-5 text-black" />
+              </button>
+            )}
           </div>
         ) : (
-          // ✅ Multiline layout (buttons below)
           <>
             <textarea
               value={value}
@@ -147,12 +155,23 @@ export function ChatInput({
               >
                 <Plus className="h-6 w-6 text-white hover:bg-[#424242]" />
               </button>
-              <button
-                type="submit"
-                className="text-zinc-200 bg-white rounded-full p-2 hover:cursor-pointer"
+
+              {isInputEmpty ? (
+                <button
+                type="button"
+                className="bg-[#424242] hover:bg-secondary rounded-full p-2 cursor-default"
+                disabled
               >
-                <MoveUp className="h-5 w-5 text-black" />
+                <InputDisabledButton className="h-5 w-5 text-white" />
               </button>
+              ) : (
+                <button
+                  type="submit"
+                  className="text-white bg-white rounded-full p-2 hover:cursor-pointer"
+                >
+                  <InputButton className="h-5 w-5 text-black" />
+                </button>
+              )}
             </div>
           </>
         )}

@@ -14,7 +14,7 @@ export function SidebarItem({ chat }: { chat: Chat }) {
     <Link
       href={`/chat/${chat.id}`}
       className={cn(
-        "group flex items-center justify-between rounded-xl px-3 py-2 text-sm",
+        "group flex items-center hover:bg-primary justify-between rounded-xl px-3 py-2 text-sm",
         active ? "bg-secondary text-white" : "text-text-whitehover:bg-secondary",
       )}
     >
