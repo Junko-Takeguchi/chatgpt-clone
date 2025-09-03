@@ -11,7 +11,7 @@ export default clerkMiddleware(async (auth, req) => {
   if (!publicRoutes(req)) {
     await auth.protect(); // Redirects unauthenticated users to /sign-in
   }
-}, { debug: true });
+}, { debug: false });
 
 export const config = {
   matcher: [
