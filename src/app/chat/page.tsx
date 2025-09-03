@@ -3,17 +3,23 @@
 
 import { ContentHeader } from "@/components/chat/content-header";
 import { ChatInput } from "@/components/chat/chat-input";
-import { createChat } from "@/lib/chat-store";
-import { useRouter } from "next/navigation";
+import { redirect, useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs"; // <-- import
+import { createChatDB } from "@/lib/chat-store-db";
 
 export default function ChatHomePage() {
   const router = useRouter();
   const { user } = useUser();
+  
+  // if(!isSignedIn) redirect("/sign-in");
 
-  const startChat = (text: string, files?: any[]) => {
-    const { chat } = createChat(text, user?.id, files);
-    router.push(`/chat/${chat.id}`);
+  const startChat = async (text: string, files?: any[]) => {
+    // const { chat } = createChat(text, user?.id, files);
+    if(user?.id) {
+      const createdChatIdInDB = await createChatDB(user?.id, text, files);
+      router.push(`/chat/${createdChatIdInDB}`);
+    }
+    else console.log("Not logged In")
   };
 
   return (

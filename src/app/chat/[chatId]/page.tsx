@@ -2,45 +2,37 @@
 "use client";
 
 import { useEffect, useRef, useMemo } from "react";
-import { ContentHeader } from "@/components/chat/content-header";
-import { ChatInput } from "@/components/chat/chat-input";
-import { useChats, getChat, getMessages, saveChat } from "@/lib/chat-store";
-import { MessageBubble } from "@/components/chat/message-bubble";
-import { useParams } from "next/navigation";
+import { redirect, useParams } from "next/navigation";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { useUser } from "@clerk/nextjs"; 
+import { useChats } from "@/hooks/use-chats";
+import { ContentHeader } from "@/components/chat/content-header";
+import { ChatInput } from "@/components/chat/chat-input";
+import { MessageBubble } from "@/components/chat/message-bubble";
 
 export default function ChatPage() {
   const params = useParams() as { chatId?: string };
   const chatId = params?.chatId;
-  const { user } = useUser();
-  const clerkUserId = user?.id;
-
-  const { mutate } = useChats(clerkUserId); // per-user
-  const chat = useMemo(() => (chatId ? getChat(chatId, clerkUserId) : undefined), [chatId, clerkUserId]);
-  const initialMessages = useMemo(() => (chatId ? getMessages(chatId, clerkUserId) : []), [chatId, clerkUserId]);
+  const { chats, mutate } = useChats();
+  const chat = useMemo(() => chats.find((c) => c.id === chatId), [chats, chatId]);
+  const initialMessages = useMemo(() => chat?.messages ?? [], [chat]);
 
   const endRef = useRef<HTMLDivElement | null>(null);
 
-  // Setup useChat with the stored messages and persistence hooks
-  const { messages, sendMessage, status } = useChat({
+  const { messages, sendMessage } = useChat({
     id: chatId,
-    // hydrate with stored messages (UIMessage[])
     messages: initialMessages,
     transport: new DefaultChatTransport({
       api: "/api/chat",
+      body: { chatId },
     }),
     onFinish: ({ messages }) => {
       if (!chatId) return;
-      // persist for the current user
-      saveChat({ chatId, messages, clerkUserId });
-      // refresh sidebar list (per-user)
-      mutate?.();
+      mutate?.(); // refresh updated chat
     },
   });
 
-  // persist on every messages change so partial updates are saved locally
+  // Auto-send initial message if present in sessionStorage
   useEffect(() => {
     if (!chatId) return;
 
@@ -52,18 +44,19 @@ export default function ChatPage() {
     try {
       pending = JSON.parse(raw);
     } catch {
-      // fallback: legacy text-only
       pending = { text: raw };
     }
 
-    if (!pending) return;
+    if (!pending?.text && !pending?.files?.length) {
+      sessionStorage.removeItem(key);
+      return;
+    }
 
-    const already = messages.some((m) =>
-      m.role === "user" &&
-      Array.isArray(m.parts) &&
-      m.parts.some(
-        (p) => p.type === "text" && p.text === pending?.text
-      )
+    const already = messages.some(
+      (m) =>
+        m.role === "user" &&
+        Array.isArray(m.parts) &&
+        m.parts.some((p) => p.type === "text" && p.text === pending?.text)
     );
 
     if (already) {
@@ -81,31 +74,27 @@ export default function ChatPage() {
     } finally {
       sessionStorage.removeItem(key);
     }
-  }, [chatId, sendMessage]);
+  }, [chatId, sendMessage, messages]);
 
-
-  // auto-scroll when messages change
+  // Scroll to bottom when messages update
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
 
-  if (!chat) {
-    return (
-      <div className="flex h-full flex-col">
-        <ContentHeader />
-        <main className="flex-1 flex items-center justify-center">
-          <div className="text-zinc-400">Chat not found.</div>
-        </main>
-      </div>
-    );
-  }
-
   const handleSend = (text: string, files?: any[]) => {
-    sendMessage({
-      text,
-      files,
-    });
+    sendMessage({ text, files });
   };
+
+  // if (!chat && !isLoading) {
+  //   return (
+  //     <div className="flex h-full flex-col">
+  //       <ContentHeader />
+  //       <main className="flex-1 flex items-center justify-center">
+  //         <div className="text-zinc-400">Chat not found.</div>
+  //       </main>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="flex h-full flex-col">
@@ -118,39 +107,29 @@ export default function ChatPage() {
               key={m.id}
               message={m}
               onEdit={(text) => {
-              if (!chatId) return;
+                if (!chatId) return;
 
-              // Step 1: Filter out the old message
-              const filteredMessages = messages.filter((msg) => msg.id !== m.id);
-
-              // Step 2: Save locally (optional, depending on your UX)
-              saveChat({ chatId, messages: filteredMessages, clerkUserId });
-
-              // Step 3: Re-send the edited message
-              sendMessage({ text });
-            }}
+                const filteredMessages = messages.filter((msg) => msg.id !== m.id);
+                // Optionally: implement backend PATCH for edited message
+                sendMessage({ text });
+              }}
             />
-
           ))}
           <div ref={endRef} />
         </div>
       </div>
 
-      <div className="">
-        <div className="">
-          <div className="mx-auto w-full max-w-2xl">
-            <ChatInput onSubmit={handleSend} />
-          </div>
-        </div>
-
+      <div className="mx-auto w-full max-w-2xl">
+        <ChatInput onSubmit={handleSend} />
       </div>
+
       <footer className="text-center text-xs text-white px-4 pb-3 pt-2">
         ChatGPT can make mistakes. Check important info. See{" "}
         <a href="#" className="underline hover:text-white">
           Cookie Preferences
-        </a>.
+        </a>
+        .
       </footer>
     </div>
   );
-
 }

@@ -3,10 +3,10 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import type { Chat } from "@/lib/types"
 import { Ellipsis } from "lucide-react"
+import { UIChat } from "@/hooks/use-chats"
 
-export function SidebarItem({ chat }: { chat: Chat }) {
+export function SidebarItem({ chat }: { chat: UIChat }) {
   const pathname = usePathname()
   const active = pathname?.endsWith(chat.id)
 

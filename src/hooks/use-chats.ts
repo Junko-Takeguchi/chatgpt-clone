@@ -1,14 +1,29 @@
-// hooks/useChats.ts
-import { Chat } from "@/lib/types";
 import useSWR from "swr";
+import type { UIMessage } from "ai";
+import { getAllChats } from "@/lib/chat-store-db";
 
-async function fetcher(url: string) {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error("Failed to fetch");
-  return res.json();
-}
+export type UIChat = {
+  id: string;
+  title: string;
+  messages: UIMessage[];
+};
 
-export function useChats() {
-  const { data, error, mutate } = useSWR<{ chats: Chat[] }>("/api/chats", fetcher);
-  return { data: data?.chats ?? [], loading: !data && !error, error, mutate };
+type UseChatsResponse = {
+  chats: UIChat[];
+  isLoading: boolean;
+  isError: boolean;
+  mutate: () => void;
+};
+
+export function useChats(): UseChatsResponse {
+  const { data, error, mutate } = useSWR<UIChat[]>("db:chats", getAllChats, {
+    fallbackData: [],
+  });
+
+  return {
+    chats: data ?? [],
+    isLoading: !data && !error,
+    isError: !!error,
+    mutate,
+  };
 }

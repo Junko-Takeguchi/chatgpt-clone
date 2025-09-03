@@ -1,25 +1,21 @@
 "use client"
 
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import { useRouter } from "next/navigation"
-import { useChats, groupChatsByTime, createChat } from "@/lib/chat-store"
 import { Button } from "@/components/ui/button"
 import { PanelLeft, Plus, UsersRound } from "lucide-react"
 import { SidebarSection } from "./sidebar-section"
-import Image from "next/image"
 import { cn } from "@/lib/utils"
 import { useState, useEffect } from "react"
 import { SidebarHeader } from "./sidebar-header"
-import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from "@clerk/nextjs"
+import { SignInButton, UserButton, useUser } from "@clerk/nextjs"
 import { OpenAILogo } from "../icons"
+import { useChats } from "@/hooks/use-chats"
 
 export function Sidebar() {
   const { user, isLoaded, isSignedIn } = useUser();
   // pass user?.id so useChats returns the per-user chat list
-  const { data } = useChats(user?.id);
-  const chats = data?.chats ?? [];
+  const { chats } = useChats();
   const router = useRouter()
-  const grouped = groupChatsByTime(chats)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isDesktop, setIsDesktop] = useState(true);
 
@@ -101,9 +97,7 @@ export function Sidebar() {
           {/* Scrollable chat list */}
           {isSidebarOpen && (
             <div className="flex-1 space-y-6 px-3 overflow-y-auto">
-              <SidebarSection title="Today" chats={grouped.today} />
-              <SidebarSection title="Previous 7 Days" chats={grouped.last7} />
-              <SidebarSection title="Previous 30 Days" chats={grouped.last30} />
+              <SidebarSection title="Chats" chats={chats} />
             </div>
           )}
         </div>

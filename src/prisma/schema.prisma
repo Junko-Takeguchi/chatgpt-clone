@@ -20,7 +20,30 @@ model User {
   firstName   String?
   lastName    String?
   imageUrl    String?
+  chats       Chat[]
   clerkUserId String   @unique
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model Chat {
+  id        String     @id @default(auto()) @map("_id") @db.ObjectId
+  title     String
+  userId    String
+  user      User       @relation(fields: [userId], references: [clerkUserId])
+  messages  Message[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model Message {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  chatId    String   @db.ObjectId
+  role      String   // 'user' | 'assistant'
+  text   String?
+  files     Json?    // Optional for file data
+  
+  createdAt DateTime @default(now())
+
+  chat      Chat     @relation(fields: [chatId], references: [id])
 }

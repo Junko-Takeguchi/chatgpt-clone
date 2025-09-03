@@ -1,7 +1,7 @@
+import { UIChat } from "@/hooks/use-chats";
 import { SidebarItem } from "./sidebar-item"
-import type { Chat } from "@/lib/types"
 
-export function SidebarSection({ title, chats }: { title: string; chats: Chat[] }) {
+export function SidebarSection({ title, chats }: { title: string; chats: UIChat[] }) {
   if (!chats?.length) return null
   return (
     <div className="space-y-2">
