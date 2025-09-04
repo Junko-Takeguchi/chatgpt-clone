@@ -1,6 +1,6 @@
 import { google } from "@ai-sdk/google";
 import { convertToModelMessages, streamText, type UIMessage } from "ai";
-import { createMem0, retrieveMemories, addMemories } from "@mem0/vercel-ai-provider";
+import { createMem0, addMemories } from "@mem0/vercel-ai-provider";
 import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
@@ -8,14 +8,14 @@ import { NextResponse } from "next/server";
 const mem0 = createMem0({
   provider: "google",
   mem0ApiKey: process.env.MEM0_API_KEY!,
-  apiKey: process.env.GOOGLE_API_KEY!, // Optional, can also be env based in sdk
+  apiKey: process.env.GOOGLE_API_KEY!,
 });
 
 export async function POST(req: Request) {
   const { messages, chatId }: { messages: UIMessage[]; chatId: string } = await req.json();
   const { userId } = await auth();
 
-  if(!userId) return NextResponse.json({message: "forbidden"}, {status: 403})
+  if (!userId) return NextResponse.json({ message: "forbidden" }, { status: 403 });
 
   const userMessage = messages[messages.length - 1];
 
@@ -40,20 +40,24 @@ export async function POST(req: Request) {
     }
   }
 
-  // Save user message to DB
-  void prisma.message.create({
-    data: {
-      chatId,
-      role: "user",
-      text,
-      files: files.length > 0 ? files : undefined,
-    },
-  }).catch((e: any) => {
-    console.error("Failed to save user message to DB:", e);
-  });
+  const hasFile = messages.some((m) => m.parts.some((p) => p.type === "file"));
 
-  // ---  Add user message to memory ---
-  if (userId && text) {
+  // Save user message to DB
+  void prisma.message
+    .create({
+      data: {
+        chatId,
+        role: "user",
+        text,
+        files: files.length > 0 ? files : undefined,
+      },
+    })
+    .catch((err) => {
+      console.error("❌ Failed to save user message to DB:", err);
+    });
+
+  if (!hasFile && userId && text) {
+    // Add user message to Mem0 memory
     void addMemories(
       [{ role: "user", content: [{ type: "text", text }] }],
       {
@@ -61,28 +65,32 @@ export async function POST(req: Request) {
         mem0ApiKey: process.env.MEM0_API_KEY,
       }
     ).catch((err) => {
-      console.error(" Failed to add memory:", err);
+      console.error("❌ Failed to add memory:", err);
     });
   }
 
   const result = streamText({
-        model: google("gemini-2.5-flash"),
-        system: "Return the answer in markdown",
-        messages: convertToModelMessages(messages),
-        onFinish({ text: generatedText }) {
-          void prisma.message
-            .create({
-              data: {
-                chatId,
-                role: "assistant",
-                text: generatedText,
-              },
-            })
-            .catch((err : any) => {
-              console.error("Failed to save assistant message to DB:", err);
-            });
-        },
-      })
+    model: hasFile
+      ? google("gemini-2.5-flash")
+      : mem0("gemini-2.5-flash", { user_id: userId }),
+    system: hasFile
+      ? "Return the answer in markdown"
+      : "Use the user's previous messages to improve your response.",
+    messages: convertToModelMessages(messages),
+    onFinish({ text: generatedText }) {
+      void prisma.message
+        .create({
+          data: {
+            chatId,
+            role: "assistant",
+            text: generatedText,
+          },
+        })
+        .catch((err) => {
+          console.error("❌ Failed to save assistant message to DB:", err);
+        });
+    },
+  });
 
   return result.toUIMessageStreamResponse();
 }
