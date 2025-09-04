@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { verifyWebhook } from '@clerk/nextjs/webhooks'
 import { createUser, getUserById, UpdateUser } from '@/lib/users'
-import { User } from '../../../../../node_modules/@prisma/client' 
+import { User } from '../../node_modules/@prisma/client' 
 
 export async function POST(req: NextRequest) {
   try {
